@@ -1,5 +1,7 @@
 ﻿using ImageMagick;
+using System.Collections;
 using System.IO;
+using System.Text;
 
 namespace TscDemo.ImagePrintingApp
 {
@@ -39,7 +41,7 @@ namespace TscDemo.ImagePrintingApp
             return label.ToByteArray();
         }
 
-        public byte[] ConvertPdfToBitmap()
+        public string ConvertPdfToBitmap()
         {
             var label = GetImageFromPdf(203);
 
@@ -51,9 +53,15 @@ namespace TscDemo.ImagePrintingApp
             byte[] bmpBytes = label.ToByteArray();
 
             uint widthInBytes = (label.Width + 7) / 8;
-            uint height = label.Height;
+            var width = (int)label.Width;
+            var height = (int)label.Height;
             byte[] tsplData = new byte[widthInBytes * height];
 
+            var sb = new StringBuilder();
+
+            BitArray dots = new BitArray(width * height);
+
+            // Один бит кодирует один пиксель
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < label.Width; x++)
@@ -61,18 +69,34 @@ namespace TscDemo.ImagePrintingApp
                     var pixel = label.GetPixels().GetPixel(x, y);
                     var color = pixel.ToColor();
 
+                    // 3. Set the corresponding bit in the byte array
+                    // TSPL usually treats 1 as black, 0 as white (or vice versa depending on mode)
+                    //int byteIndex = (y * widthInBytes) + (x / 8);
+                    int bitIndex = 7 - (x % 8); // Most Significant Bit first
+
+                    /// Fill bit array (1 bit = 1 dot)
                     if (color == MagickColors.Black)
                     {
-                        // 3. Set the corresponding bit in the byte array
-                        // TSPL usually treats 1 as black, 0 as white (or vice versa depending on mode)
-                        //int byteIndex = (y * widthInBytes) + (x / 8);
-                        int bitIndex = 7 - (x % 8); // Most Significant Bit first
+                        dots[bitIndex] = false;
+
                         //tsplData[byteIndex] |= (byte)(1 << bitIndex);
                     }
+                    else
+                    {
+                        dots[bitIndex] = true;
+                    }
+
                 }
             }
 
-            return tsplData;
+            foreach (byte dot in dots)
+            {
+                sb.Append("\\x" + dot.ToString("x2"));
+            }
+
+            // Вначале нужно сгруппировать биты по 8 и преобразовать в байты
+
+            return BitConverter.ToString(bytes).Replace("-", "");
         }
     }
 }
