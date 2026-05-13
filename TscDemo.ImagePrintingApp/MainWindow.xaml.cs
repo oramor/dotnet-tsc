@@ -138,13 +138,25 @@ namespace TscDemo.ImagePrintingApp
                 {
                     byte[] fileBytes = File.ReadAllBytes(filePath);
 
-                    string hexString = ImageHelper.ConvertPdfToBitmapHexString(fileBytes, 203);
+                    var label = ImageHelper.GetLabel(fileBytes, 203);
+                    string cmd = $"BITMAP 20,20,{label.ByteWidth},{label.Height},0,{label.Bitmap}";
+
+                    InitPrinter();
+
+                    TscLibWrapper.SendCommand(cmd);
+
+                    Print();
                 }
                 catch (IOException ex)
                 {
                     MessageBox.Show($"Error reading file: {ex.Message}");
                 }
             }
+        }
+
+        private void button5_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

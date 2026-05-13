@@ -38,7 +38,29 @@ namespace TscDemo.ImagePrintingApp
         //    return label.ToByteArray();
         //}
 
-        public static string ConvertPdfToBitmapHexString(byte[] pdfBytes, int density)
+        //public static Label GetLabelFromBitmap(byte[] bitmapBytes, int density)
+        //{
+        //    using MagickImageCollection images = [];
+
+        //    // High density is essential for PDF to Image conversion
+        //    var readSettings = new MagickReadSettings
+        //    {
+        //        Density = new Density(density),
+
+        //        /// Таким образом получаемый PNG не будет иметь прозрачности,
+        //        /// а PDF файл станет меньше
+        //        UseMonochrome = true
+        //    };
+
+        //    images.Read(bitmapBytes, readSettings);
+
+        //    var label = (MagickImage)images[0];
+        //    label.Format = MagickFormat.Bmp;
+        //    //label.Quantize(new QuantizeSettings { Colors = 2 });
+        //    label.Depth = 1;
+        //}
+
+        public static Label GetLabel(byte[] pdfBytes, int density)
         {
             using MagickImageCollection images = [];
 
@@ -99,8 +121,14 @@ namespace TscDemo.ImagePrintingApp
             dots.CopyTo(bytes, 0);
 
             // Перед первым hex-кодом отсутствует дефис
-            //return "\\x" + BitConverter.ToString(bytes).Replace("-", "\\x");
-            return BitConverter.ToString(bytes);
+            var hexString = "\\x" + BitConverter.ToString(bytes).Replace("-", "\\x");
+
+            return new Label
+            {
+                Bitmap = hexString,
+                Width = width,
+                Height = height,
+            };
         }
     }
 }
