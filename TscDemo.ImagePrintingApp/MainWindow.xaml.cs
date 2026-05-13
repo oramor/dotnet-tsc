@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using Microsoft.Win32;
+using System.IO;
 using System.Text;
 using System.Windows;
 
@@ -122,6 +123,28 @@ namespace TscDemo.ImagePrintingApp
             InitPrinter();
             TscLibWrapper.SendCommand(putCmd);
             Print();
+        }
+
+        private void button4_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "PDF Files (*.pdf)|*.pdf";
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string filePath = openFileDialog.FileName;
+
+                try
+                {
+                    byte[] fileBytes = File.ReadAllBytes(filePath);
+
+                    string hexString = ImageHelper.ConvertPdfToBitmapHexString(fileBytes, 203);
+                }
+                catch (IOException ex)
+                {
+                    MessageBox.Show($"Error reading file: {ex.Message}");
+                }
+            }
         }
     }
 }
