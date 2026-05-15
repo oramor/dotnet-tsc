@@ -5,14 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TscDemo.ImagePrintingApp"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Button x:Name="button" Content="Button" HorizontalAlignment="Left" Margin="134,70,0,0" VerticalAlignment="Top" Click="button_Click"/>
-        <Button x:Name="button1" Content="Bitmap" HorizontalAlignment="Left" Margin="134,114,0,0" VerticalAlignment="Top" Click="button1_Click"/>
-        <Button x:Name="button2" Content="Send Binary" HorizontalAlignment="Left" Margin="134,157,0,0" VerticalAlignment="Top" Click="button2_Click"/>
-        <Button x:Name="button3" Content="Печать заранее загруженного TEST.PNG" HorizontalAlignment="Left" Margin="136,197,0,0" VerticalAlignment="Top" Click="button3_Click"/>
-        <Button x:Name="button4" Content="Test converting PDF to HEX" HorizontalAlignment="Left" Margin="155,254,0,0" VerticalAlignment="Top" Click="button4_Click"/>
-        <Button x:Name="button5" Content="Concat String + Hex" HorizontalAlignment="Left" Margin="154,306,0,0" VerticalAlignment="Top" Click="button5_Click"/>
+        Title="TSPL Label Printing Demo App" Height="200" Width="400">
+    <StackPanel Margin="50">
+        <Button x:Name="button" Content="Тест отправки данных в команду DOWNLOAD (не доделан)" HorizontalAlignment="Center" Margin="0,0,0,15" VerticalAlignment="Top" Click="button_Click"/>
+        <Button x:Name="button4" Content="Тест отправки данных в команду BITMAP" HorizontalAlignment="Center" VerticalAlignment="Top" Click="button4_Click"/>
 
-    </Grid>
+    </StackPanel>
 </Window>

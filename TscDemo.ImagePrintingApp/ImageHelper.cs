@@ -5,64 +5,10 @@ namespace TscDemo.ImagePrintingApp
 {
     internal class ImageHelper
     {
-        static byte[] GetBmpBytes(byte[] pdfBytes, int density)
-        {
-            using MagickImageCollection images = [];
-
-            // High density is essential for PDF to Image conversion
-            var readSettings = new MagickReadSettings
-            {
-                Density = new Density(density),
-
-                /// Таким образом получаемый PNG не будет иметь прозрачности,
-                /// а PDF файл станет меньше
-                UseMonochrome = true
-            };
-
-            images.Read(pdfBytes, readSettings);
-
-            var label = (MagickImage)images[0];
-            label.Format = MagickFormat.Bmp;
-            //label.Quantize(new QuantizeSettings { Colors = 2 });
-            label.Depth = 1;
-
-            return label.ToByteArray();
-        }
-
-        //public static byte[] ConvertPdfToPng(byte[] pdfBytes)
-        //{
-        //    var label = GetImageFromPdf(pdfBytes, 203);
-
-        //    label.Format = MagickFormat.Png;
-
-        //    return label.ToByteArray();
-        //}
-
-        //public static Label GetLabelFromBitmap(byte[] bitmapBytes, int density)
-        //{
-        //    using MagickImageCollection images = [];
-
-        //    // High density is essential for PDF to Image conversion
-        //    var readSettings = new MagickReadSettings
-        //    {
-        //        Density = new Density(density),
-
-        //        /// Таким образом получаемый PNG не будет иметь прозрачности,
-        //        /// а PDF файл станет меньше
-        //        UseMonochrome = true
-        //    };
-
-        //    images.Read(bitmapBytes, readSettings);
-
-        //    var label = (MagickImage)images[0];
-        //    label.Format = MagickFormat.Bmp;
-        //    //label.Quantize(new QuantizeSettings { Colors = 2 });
-        //    label.Depth = 1;
-        //}
-
         public static byte ReverseBits(byte b)
         {
             return (byte)((b * 0x0202020202 & 0x010884422010) % 1023);
+
             // Или более понятный способ через цикл:
             /*
             byte reversed = 0;
@@ -95,11 +41,6 @@ namespace TscDemo.ImagePrintingApp
             label.Format = MagickFormat.Bmp;
             //label.Quantize(new QuantizeSettings { Colors = 2 });
             label.Depth = 1;
-
-            //var guid = Guid.NewGuid();
-            //string folder = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-            //string bmpPath = Path.Combine(folder, $"{guid}.bmp");
-            //label.Write(bmpPath);
 
             var width = (int)label.Width;
             var height = (int)label.Height;

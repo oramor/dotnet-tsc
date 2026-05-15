@@ -37,95 +37,44 @@ namespace TscDemo.ImagePrintingApp
             TscLibWrapper.ClosePort();
         }
 
+        /// <summary>
+        /// Демонстрация отправки файла на принтер и печать файла, загруженного в память.
+        /// НЕ доработано. Нужно отправлять данные в бинарном виде, чтобы они корректно
+        /// записались в память. По аналогии с BITMAP
+        /// </summary>
         private void button_Click(object sender, RoutedEventArgs e)
         {
-            string testFileName = "TEST_PNG.png";
+            var openFileDialog = new OpenFileDialog
+            {
+                //Filter = "PDF Files (*.pdf)|*.pdf"
+            };
 
-            string testFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), testFileName);
+            if (openFileDialog.ShowDialog() != true)
+                return;
 
-            byte[] bytes = File.ReadAllBytes(testFilePath);
+            string filePath = openFileDialog.FileName;
+            string fileName = openFileDialog.SafeFileName;
+
+            byte[] bytes = File.ReadAllBytes(filePath);
             string hexString = BitConverter.ToString(bytes).Replace("-", "");
             string base64String = Convert.ToBase64String(bytes);
 
             // DOWNLOAD F - for save to flash memory
-            string downloadCmd = $"DOWNLOAD \"{testFileName}\",{new System.IO.FileInfo(testFilePath).Length},{base64String}";
-
-            string putCmd = $"PUTPNG 50,50,\"{testFileName}\"";
+            string downloadCmd = $"DOWNLOAD \"{fileName}\",{new System.IO.FileInfo(filePath).Length},{base64String}";
+            string putCmd = $"PUTPNG 50,50,\"{fileName}\"";
 
             InitPrinter();
 
             TscLibWrapper.SendCommand(downloadCmd);
             TscLibWrapper.SendCommand(putCmd);
-
             TscLibWrapper.PrintLabel("1", "1");
-
-            TscLibWrapper.SendCommand($"KILL \"{testFileName}\"");
-
+            TscLibWrapper.SendCommand($"KILL \"{fileName}\"");
             TscLibWrapper.ClosePort();
         }
 
-        private void button1_Click(object sender, RoutedEventArgs e)
-        {
-            string testFileName = "TEST_PNG.png";
-
-            string testFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), testFileName);
-
-            byte[] bytes = File.ReadAllBytes(testFilePath);
-            string hexString = BitConverter.ToString(bytes).Replace("-", " ");
-            string base64String = Convert.ToBase64String(bytes);
-
-            //int bitmapBytes = 
-            string hexInput = "0000000000000000";
-
-            var asciiBytes = Encoding.ASCII.GetBytes(hexInput);
-            var asciiHexString = Encoding.ASCII.GetString(asciiBytes);
-
-            byte[] hexBytes = Convert.FromHexString(asciiHexString);
-
-            // DOWNLOAD F - for save to flash memory
-            string bitmapCmd = $"BITMAP 50,50,1,1,0,\x30\x30\x30\x30";
-
-            InitPrinter();
-
-            TscLibWrapper.SendCommand(bitmapCmd);
-
-            Print();
-        }
-
-        public byte[] HexStringToByteArray(string hex)
-        {
-            // Удаляем возможный префикс "0x", если он есть
-            if (hex.StartsWith("0x")) hex = hex.Substring(2);
-
-            // Удаляем пробелы или запятые, если они есть
-            hex = hex.Replace(" ", "").Replace(",", "");
-
-            return Enumerable.Range(0, hex.Length)
-                             .Where(x => x % 2 == 0)
-                             .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
-                             .ToArray();
-        }
-
-        private void button2_Click(object sender, RoutedEventArgs e)
-        {
-            string bitmapCmd = $"BITMAP 50,40,2,2,0,\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
-            byte[] ascii = Encoding.UTF8.GetBytes(bitmapCmd);
-            int lenght = ascii.Length;
-
-            InitPrinter();
-            TscLibWrapper.SendBinaryData(ascii, lenght);
-            Print();
-        }
-
-        private void button3_Click(object sender, RoutedEventArgs e)
-        {
-            string putCmd = $"PUTPNG 1,1,\"TEST.PNG\"";
-
-            InitPrinter();
-            TscLibWrapper.SendCommand(putCmd);
-            Print();
-        }
-
+        /// <summary>
+        /// Тест конвертации файла в Bitmap и отправки данных на принтер в бинарном виде.
+        /// </summary>
         private void button4_Click(object sender, RoutedEventArgs e)
         {
             var openFileDialog = new OpenFileDialog
@@ -161,37 +110,6 @@ namespace TscDemo.ImagePrintingApp
                     MessageBox.Show($"Error reading file: {ex.Message}");
                 }
             }
-        }
-
-        private void button5_Click(object sender, RoutedEventArgs e)
-        {
-            /// Моделируем матриуц BMP-файла. Принтер печатает false-значения (0)
-            /// и пропускает true (1)
-            var bmpBits = new BitArray([
-                true, true, true, true, false, false, false, false]);
-
-            /// Переводим биты в байты методом группировки.
-            int numBmpBytes = (bmpBits.Length + 7) / 8;
-            byte[] bmpBytes = new byte[numBmpBytes];
-            bmpBits.CopyTo(bmpBytes, 0);
-
-            /// Выполняем зеркалирование битов, чтобы сохранить исходную матрицу
-            for (int i = 0; i < bmpBytes.Length; i++)
-            {
-                bmpBytes[i] = ImageHelper.ReverseBits(bmpBytes[i]);
-            }
-
-            /// Создаем заголовок команды и переводим ее в битовый формат
-            byte[] cmdHeaderBytes = Encoding.ASCII.GetBytes("BITMAP 50,40,2,1,0,");
-
-            var binaryCommand = new byte[cmdHeaderBytes.Length + bmpBytes.Length];
-
-            Buffer.BlockCopy(cmdHeaderBytes, 0, binaryCommand, 0, cmdHeaderBytes.Length);
-            Buffer.BlockCopy(bmpBytes, 0, binaryCommand, cmdHeaderBytes.Length, bmpBytes.Length);
-
-            InitPrinter();
-            TscLibWrapper.SendBinaryData(binaryCommand, binaryCommand.Length);
-            Print();
         }
     }
 }
