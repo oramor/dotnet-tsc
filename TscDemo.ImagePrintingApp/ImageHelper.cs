@@ -60,7 +60,22 @@ namespace TscDemo.ImagePrintingApp
         //    label.Depth = 1;
         //}
 
-        public static Label GetLabel(byte[] pdfBytes, int density)
+        public static byte ReverseBits(byte b)
+        {
+            return (byte)((b * 0x0202020202 & 0x010884422010) % 1023);
+            // Или более понятный способ через цикл:
+            /*
+            byte reversed = 0;
+            for (int i = 0; i < 8; i++)
+            {
+                if ((b & (1 << i)) != 0)
+                    reversed |= (byte)(1 << (7 - i));
+            }
+            return reversed;
+            */
+        }
+
+        public static BitmapElement GetLabel(byte[] imgBytes, int density)
         {
             using MagickImageCollection images = [];
 
@@ -74,7 +89,7 @@ namespace TscDemo.ImagePrintingApp
                 UseMonochrome = true
             };
 
-            images.Read(pdfBytes, readSettings);
+            images.Read(imgBytes, readSettings);
 
             var label = (MagickImage)images[0];
             label.Format = MagickFormat.Bmp;
@@ -88,47 +103,57 @@ namespace TscDemo.ImagePrintingApp
 
             var width = (int)label.Width;
             var height = (int)label.Height;
-            //int widthInBytes = (width + 7) / 8;
 
-            var dots = new BitArray(width * height);
+            /// Через остаток от деления мы вычисляем кол-во белых точек, которые необходимо
+            /// добавить к каждой строке, чтобы ширина матрицы была четной числу битов в байте,
+            /// то есть восьми
+            int offset = width % 8;
+            int specialWidth = width - offset + 8;
+
+            /// Ширина битовой матрицы будет больше реального изображения на величину оффсета,
+            /// поскольку команда BITMAP в TSPL2 понимает только четные значения. Здесь также
+            /// следует обратить внимание, что битовая коллеция по дефолту заполняется true
+            /// значениями, т.к. они не пропечатываются.
+            var dots = new BitArray(specialWidth * height, true);
             var pixels = label.GetPixels();
 
             for (int y = 0; y < height; y++)
             {
-                for (int x = 0; x < label.Width; x++)
+                /// Цикл проходит по реальной ширине изображения
+                for (int x = 0; x < specialWidth; x++)
                 {
+                    int bitIndex = y * specialWidth + x;
+
+                    /// Пропускаем, если вышил за пределы оригинального изображения
+                    /// (пиксели останутся белыми)
+                    if (x > width - 1)
+                    {
+                        dots[bitIndex] = true;
+                        continue;
+                    }
+
                     var pixel = pixels.GetPixel(x, y);
                     var color = pixel.ToColor();
 
-                    //int byteIndex = (y * widthInBytes) + (x / 8);
-                    int bitIndex = y * width + x; // 7 - (x % 8); // Most Significant Bit first
-
                     // Fill bit array (1 bit = 1 dot). False - black, true - white.
-                    if (color.ToString() == "#FFFFFFFF")
+                    if (color.ToString() != "#FFFFFFFF")
                     {
-                        dots[bitIndex] = true;
-                    }
-                    else
-                    {
-                        // NOTH
+                        dots[bitIndex] = false;
                     }
                 }
             }
 
-            // Convert bits to byte array
-            int numBytes = (dots.Length + 7) / 8;
-            byte[] bytes = new byte[numBytes];
+            /// Ширина изображения уже приведена к четности 8, поэтому выражение numBytes = (dots.Length + 7) / 8 избыточно
+            byte[] bytes = new byte[dots.Length / 8];
             dots.CopyTo(bytes, 0);
 
-            // Перед первым hex-кодом отсутствует дефис
-            var hexString = "\\x" + BitConverter.ToString(bytes).Replace("-", "\\x");
-
-            return new Label
+            /// Выполняем инверсию битов в каждом байте, чтобы их порядок соответствовал точкам изображения
+            for (int i = 0; i < bytes.Length; i++)
             {
-                Bitmap = hexString,
-                Width = width,
-                Height = height,
-            };
+                bytes[i] = ReverseBits(bytes[i]);
+            }
+
+            return new BitmapElement(bytes, specialWidth, height);
         }
     }
 }

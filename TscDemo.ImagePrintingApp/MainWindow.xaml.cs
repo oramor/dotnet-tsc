@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using System.Collections;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -13,6 +14,27 @@ namespace TscDemo.ImagePrintingApp
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void InitPrinter()
+        {
+            TscLibWrapper.OpenPort("usb");
+
+            TscLibWrapper.SendCommand("DIRECTION 1");
+            TscLibWrapper.SendCommand("SET PEEL OFF");
+            TscLibWrapper.SendCommand("SET CUTTER OFF");
+            TscLibWrapper.SendCommand("SET CUTTER OFF");
+            TscLibWrapper.SendCommand("SET PARTIAL_CUTTER OFF");
+            TscLibWrapper.SendCommand("SET TEAR ON");
+            //TscLibWrapper.SendCommand("CODEPAGE UTF8");
+            TscLibWrapper.SendCommand("SIZE 58 mm,40 mm");
+            TscLibWrapper.SendCommand("CLS");
+        }
+
+        private void Print()
+        {
+            TscLibWrapper.PrintLabel("1", "1");
+            TscLibWrapper.ClosePort();
         }
 
         private void button_Click(object sender, RoutedEventArgs e)
@@ -95,27 +117,6 @@ namespace TscDemo.ImagePrintingApp
             Print();
         }
 
-        private void InitPrinter()
-        {
-            TscLibWrapper.OpenPort("usb");
-
-            TscLibWrapper.SendCommand("DIRECTION 1");
-            TscLibWrapper.SendCommand("SET PEEL OFF");
-            TscLibWrapper.SendCommand("SET CUTTER OFF");
-            TscLibWrapper.SendCommand("SET CUTTER OFF");
-            TscLibWrapper.SendCommand("SET PARTIAL_CUTTER OFF");
-            TscLibWrapper.SendCommand("SET TEAR ON");
-            TscLibWrapper.SendCommand("CODEPAGE 1251");
-            TscLibWrapper.SendCommand("SIZE 58 mm,40 mm");
-            TscLibWrapper.SendCommand("CLS");
-        }
-
-        private void Print()
-        {
-            TscLibWrapper.PrintLabel("1", "1");
-            TscLibWrapper.ClosePort();
-        }
-
         private void button3_Click(object sender, RoutedEventArgs e)
         {
             string putCmd = $"PUTPNG 1,1,\"TEST.PNG\"";
@@ -127,8 +128,10 @@ namespace TscDemo.ImagePrintingApp
 
         private void button4_Click(object sender, RoutedEventArgs e)
         {
-            var openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "PDF Files (*.pdf)|*.pdf";
+            var openFileDialog = new OpenFileDialog
+            {
+                //Filter = "PDF Files (*.pdf)|*.pdf"
+            };
 
             if (openFileDialog.ShowDialog() == true)
             {
@@ -139,12 +142,18 @@ namespace TscDemo.ImagePrintingApp
                     byte[] fileBytes = File.ReadAllBytes(filePath);
 
                     var label = ImageHelper.GetLabel(fileBytes, 203);
-                    string cmd = $"BITMAP 20,20,{label.ByteWidth},{label.Height},0,{label.Bitmap}";
+
+                    /// Создаем заголовок команды и переводим ее в битовый формат
+                    byte[] cmdHeaderBytes = Encoding.ASCII.GetBytes($"BITMAP 1,1,{label.ByteWidth},{label.Height},0,");
+
+                    var binaryCommand = new byte[cmdHeaderBytes.Length + label.Data.Length];
+
+
+                    Buffer.BlockCopy(cmdHeaderBytes, 0, binaryCommand, 0, cmdHeaderBytes.Length);
+                    Buffer.BlockCopy(label.Data, 0, binaryCommand, cmdHeaderBytes.Length, label.Data.Length);
 
                     InitPrinter();
-
-                    TscLibWrapper.SendCommand(cmd);
-
+                    TscLibWrapper.SendBinaryData(binaryCommand, binaryCommand.Length);
                     Print();
                 }
                 catch (IOException ex)
@@ -156,7 +165,33 @@ namespace TscDemo.ImagePrintingApp
 
         private void button5_Click(object sender, RoutedEventArgs e)
         {
+            /// Моделируем матриуц BMP-файла. Принтер печатает false-значения (0)
+            /// и пропускает true (1)
+            var bmpBits = new BitArray([
+                true, true, true, true, false, false, false, false]);
 
+            /// Переводим биты в байты методом группировки.
+            int numBmpBytes = (bmpBits.Length + 7) / 8;
+            byte[] bmpBytes = new byte[numBmpBytes];
+            bmpBits.CopyTo(bmpBytes, 0);
+
+            /// Выполняем зеркалирование битов, чтобы сохранить исходную матрицу
+            for (int i = 0; i < bmpBytes.Length; i++)
+            {
+                bmpBytes[i] = ImageHelper.ReverseBits(bmpBytes[i]);
+            }
+
+            /// Создаем заголовок команды и переводим ее в битовый формат
+            byte[] cmdHeaderBytes = Encoding.ASCII.GetBytes("BITMAP 50,40,2,1,0,");
+
+            var binaryCommand = new byte[cmdHeaderBytes.Length + bmpBytes.Length];
+
+            Buffer.BlockCopy(cmdHeaderBytes, 0, binaryCommand, 0, cmdHeaderBytes.Length);
+            Buffer.BlockCopy(bmpBytes, 0, binaryCommand, cmdHeaderBytes.Length, bmpBytes.Length);
+
+            InitPrinter();
+            TscLibWrapper.SendBinaryData(binaryCommand, binaryCommand.Length);
+            Print();
         }
     }
 }
