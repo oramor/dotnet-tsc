@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TscDemo.ImagePrintingApp"
         mc:Ignorable="d"
-        Title="TSPL Label Printing Demo App" Height="200" Width="400">
-    <StackPanel Margin="50">
+        Title="TSPL Label Printing Demo App" Height="200" Width="450">
+    <StackPanel Margin="30">
         <Button x:Name="button" Content="Тест отправки данных в команду DOWNLOAD (не доделан)" HorizontalAlignment="Center" Margin="0,0,0,15" VerticalAlignment="Top" Click="button_Click"/>
         <Button x:Name="button4" Content="Тест отправки данных в команду BITMAP" HorizontalAlignment="Center" VerticalAlignment="Top" Click="button4_Click"/>
 

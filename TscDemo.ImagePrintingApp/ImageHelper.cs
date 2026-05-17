@@ -56,8 +56,10 @@ namespace TscDemo.ImagePrintingApp
             /// следует обратить внимание, что битовая коллеция по дефолту заполняется true
             /// значениями, т.к. они не пропечатываются.
             var dots = new BitArray(specialWidth * height, true);
-            var pixels = label.GetPixels();
+            IPixelCollection<byte> pixels = label.GetPixels();
 
+            /// Заполняем матрицу точек, чтобы она соответствовала изображению
+            /// с байтовой кратностью по ширине
             for (int y = 0; y < height; y++)
             {
                 /// Цикл проходит по реальной ширине изображения
@@ -73,22 +75,28 @@ namespace TscDemo.ImagePrintingApp
                         continue;
                     }
 
-                    var pixel = pixels.GetPixel(x, y);
+                    IPixel<byte> pixel = pixels.GetPixel(x, y);
                     var color = pixel.ToColor();
 
+                    if (color == null)
+                        continue;
+
                     // Fill bit array (1 bit = 1 dot). False - black, true - white.
-                    if (color.ToString() != "#FFFFFFFF")
+                    if (color.ToHexString() != "#FFFFFFFF")
                     {
                         dots[bitIndex] = false;
                     }
                 }
             }
 
-            /// Ширина изображения уже приведена к четности 8, поэтому выражение numBytes = (dots.Length + 7) / 8 избыточно
+            /// Ширина изображения уже соответствует байтовой кратности
+            /// (делится без остатка на 8), поэтому выражение
+            /// numBytes = (dots.Length + 7) / 8 избыточно
             byte[] bytes = new byte[dots.Length / 8];
             dots.CopyTo(bytes, 0);
 
-            /// Выполняем инверсию битов в каждом байте, чтобы их порядок соответствовал точкам изображения
+            /// Выполняем инверсию битов в каждом байте, чтобы их порядок
+            /// соответствовал точкам изображения
             for (int i = 0; i < bytes.Length; i++)
             {
                 bytes[i] = ReverseBits(bytes[i]);
