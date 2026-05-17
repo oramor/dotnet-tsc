@@ -1,5 +1,4 @@
 ﻿using Microsoft.Win32;
-using System.Collections;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -93,7 +92,7 @@ namespace TscDemo.ImagePrintingApp
                     var label = ImageHelper.GetLabel(fileBytes, 203);
 
                     /// Создаем заголовок команды и переводим ее в битовый формат
-                    byte[] cmdHeaderBytes = Encoding.ASCII.GetBytes($"BITMAP 1,1,{label.ByteWidth},{label.Height},0,");
+                    byte[] cmdHeaderBytes = Encoding.UTF8.GetBytes($"BITMAP 1,1,{label.ByteWidth},{label.Height},0,");
 
                     var binaryCommand = new byte[cmdHeaderBytes.Length + label.Data.Length];
 
